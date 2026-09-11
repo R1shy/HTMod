@@ -1,0 +1,93 @@
+{
+  "world": "minecraft:overworld",
+  "dev": "rishypeasy",
+  "crew": [
+    "l1me_a1d",
+    "KatzeKX",
+    "cloversghost",
+    "Mrminer96er"
+  ],
+  "directors": [
+    "VectorForge"
+  ],
+  "controls": {
+    "info-sign-pos": [-66, -18, 80],
+    "reverse-note-block-pos": [-64, -19, 80],
+    "forward-note-block-pos": [-65, -19, 80]
+  },
+  "sets": {
+    "stage-start-pos": [-50, -36, 113],
+    "first-set-pos": [-71, -30, 200],
+    "set-distance": 10,
+    "scene-spacing": 10,
+    "set-width": 29,
+    "set-length": 20,
+    "set-height": 25,
+    "sets-per-scene": [3, 3],
+    "set-direction": "-x",
+    "scene-direction": "z"
+  },
+  "sitting": {
+    "enabled": true,
+    "keep-active": true,
+    "sit-while-seated": false,
+    "height-difference-limit": {
+      "above": 1.0,
+      "below": 1.0
+    },
+    "hands": {
+      "enabled": true,
+      "main-hand-empty": true,
+      "off-hand-empty": false,
+      "off-hand-food": true,
+      "off-hand-allowed-items": [
+        "minecraft:filled_map",
+        "minecraft:torch",
+        "minecraft:soul_torch",
+        "minecraft:redstone_torch",
+        "minecraft:lantern",
+        "minecraft:soul_lantern"
+      ]
+    },
+    "preset-blocks": {
+      "stairs": true,
+      "slabs": true,
+      "carpets": true,
+      "full-blocks": false
+    },
+    "custom-enabled": false,
+    "custom-blocks": [],
+    "blacklisted-blocks": [
+      {
+        "block-tags": ["#minecraft:shulker_boxes"]
+      }
+    ],
+    "interaction-blocks": [
+      {
+        "block-ids": [
+          "minecraft:crafter",
+          "minecraft:repeating_command_block",
+          "minecraft:chain_command_block",
+          "minecraft:command_block",
+          "minecraft:trapdoor"
+        ],
+        "block-tags": [
+          "#minecraft:shulker_boxes",
+          "#c:player_workstations/furnaces",
+          "#c:player_workstations/crafting_tables",
+          "#c:villager_job_sites",
+          "#c:chests"
+        ]
+      }
+    ],
+    "allowed-above-seat": [
+      {
+        "block-tags": ["#minecraft:trapdoors"],
+        "blockstates": ["open=true"]
+      },
+      {
+        "block-tags": ["#minecraft:doors"]
+      }
+    ]
+  }
+}

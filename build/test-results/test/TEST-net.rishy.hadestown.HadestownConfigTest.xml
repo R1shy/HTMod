@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="net.rishy.hadestown.HadestownConfigTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-06T02:59:24.148Z" hostname="EMMADESK" time="0.05">
+  <properties/>
+  <testcase name="convertsLegacyYamlAndKeepsTheSource(Path)" classname="net.rishy.hadestown.HadestownConfigTest" time="0.048"/>
+  <system-out><![CDATA[[19:59:24] [Test worker/INFO]: Converted legacy YAML configuration hadestown.yml to hadestown.json
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
