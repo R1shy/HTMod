@@ -37,33 +37,30 @@ public final class HadestownConfig {
     private final String worldId;
     private final String developer;
     private final List<String> crew;
-    private final List<String> directors;
+    private final List<String> cast;
     private final BlockPos infoSignPos;
     private final BlockPos reverseNoteBlockPos;
     private final BlockPos forwardNoteBlockPos;
     private final SetSettings sets;
-    private final SittingSettings sitting;
 
     private HadestownConfig(
             String worldId,
             String developer,
             List<String> crew,
-            List<String> directors,
+            List<String> cast,
             BlockPos infoSignPos,
             BlockPos reverseNoteBlockPos,
             BlockPos forwardNoteBlockPos,
-            SetSettings sets,
-            SittingSettings sitting
+            SetSettings sets
     ) {
         this.worldId = worldId;
         this.developer = developer;
         this.crew = List.copyOf(crew);
-        this.directors = List.copyOf(directors);
+        this.cast = List.copyOf(cast);
         this.infoSignPos = infoSignPos;
         this.reverseNoteBlockPos = reverseNoteBlockPos;
         this.forwardNoteBlockPos = forwardNoteBlockPos;
         this.sets = sets;
-        this.sitting = sitting;
     }
 
     public static HadestownConfig load() {
@@ -180,7 +177,7 @@ public final class HadestownConfig {
                 string(root, "world", "minecraft:overworld"),
                 requiredString(root, "dev"),
                 strings(root, "crew"),
-                strings(root, "directors"),
+                strings(root, "cast"),
                 blockPos(controls, "info-sign-pos"),
                 blockPos(controls, "reverse-note-block-pos"),
                 blockPos(controls, "forward-note-block-pos"),
@@ -195,8 +192,7 @@ public final class HadestownConfig {
                         requiredString(sets, "set-direction"),
                         requiredString(sets, "scene-direction"),
                         integers(sets, "sets-per-scene")
-                ),
-                SittingSettings.fromJson(root.get("sitting"))
+                )
         );
         config.validate();
         return config;
@@ -326,8 +322,8 @@ public final class HadestownConfig {
         return crew;
     }
 
-    public List<String> directors() {
-        return directors;
+    public List<String> cast() {
+        return cast;
     }
 
     public BlockPos infoSignPos() {
@@ -344,10 +340,6 @@ public final class HadestownConfig {
 
     public SetSettings sets() {
         return sets;
-    }
-
-    public SittingSettings sitting() {
-        return sitting;
     }
 
     public record SetSettings(

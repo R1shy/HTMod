@@ -7,7 +7,7 @@
     "cloversghost",
     "Mrminer96er"
   ],
-  "directors": [
+  "cast": [
     "VectorForge"
   ],
   "controls": {
@@ -26,68 +26,5 @@
     "sets-per-scene": [3, 3],
     "set-direction": "-x",
     "scene-direction": "z"
-  },
-  "sitting": {
-    "enabled": true,
-    "keep-active": true,
-    "sit-while-seated": false,
-    "height-difference-limit": {
-      "above": 1.0,
-      "below": 1.0
-    },
-    "hands": {
-      "enabled": true,
-      "main-hand-empty": true,
-      "off-hand-empty": false,
-      "off-hand-food": true,
-      "off-hand-allowed-items": [
-        "minecraft:filled_map",
-        "minecraft:torch",
-        "minecraft:soul_torch",
-        "minecraft:redstone_torch",
-        "minecraft:lantern",
-        "minecraft:soul_lantern"
-      ]
-    },
-    "preset-blocks": {
-      "stairs": true,
-      "slabs": true,
-      "carpets": true,
-      "full-blocks": false
-    },
-    "custom-enabled": false,
-    "custom-blocks": [],
-    "blacklisted-blocks": [
-      {
-        "block-tags": ["#minecraft:shulker_boxes"]
-      }
-    ],
-    "interaction-blocks": [
-      {
-        "block-ids": [
-          "minecraft:crafter",
-          "minecraft:repeating_command_block",
-          "minecraft:chain_command_block",
-          "minecraft:command_block",
-          "minecraft:trapdoor"
-        ],
-        "block-tags": [
-          "#minecraft:shulker_boxes",
-          "#c:player_workstations/furnaces",
-          "#c:player_workstations/crafting_tables",
-          "#c:villager_job_sites",
-          "#c:chests"
-        ]
-      }
-    ],
-    "allowed-above-seat": [
-      {
-        "block-tags": ["#minecraft:trapdoors"],
-        "blockstates": ["open=true"]
-      },
-      {
-        "block-tags": ["#minecraft:doors"]
-      }
-    ]
   }
 }

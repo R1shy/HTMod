@@ -4,9 +4,8 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
@@ -23,46 +22,152 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LightBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 public final class HadestownRuntime {
     private static final Logger LOGGER = LoggerFactory.getLogger("Hadestown");
+    private static volatile HadestownRuntime instance;
+    private static final BlockState SPOTLIGHT_STATE = Blocks.LIGHT.defaultBlockState()
+            .setValue(LightBlock.LEVEL, 10);
 
     private final HadestownConfig config;
     private final HTSetHandler setHandler;
-    private final SittingManager sittingManager;
+    private final Map<UUID, SpotlightLocation> playerSpotlights = new HashMap<>();
+    private final Map<SpotlightLocation, Integer> spotlightPlayerCounts = new HashMap<>();
+    private final Map<SpotlightLocation, BlockState> placedSpotlights = new HashMap<>();
+    private final Set<UUID> onlinePlayers = new HashSet<>();
     private ServerLevel world;
 
     public HadestownRuntime(HadestownConfig config) {
         this.config = config;
         this.setHandler = new HTSetHandler(config.sets());
-        this.sittingManager = new SittingManager(config.sitting());
+        instance = this;
     }
 
     public void register() {
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
+        ServerTickEvents.END_SERVER_TICK.register(this::tickSpotlights);
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
         UseBlockCallback.EVENT.register(this::onUseBlock);
-        UseEntityCallback.EVENT.register(this::onUseEntity);
-        ServerTickEvents.END_SERVER_TICK.register(sittingManager::tick);
         ServerPlayerEvents.JOIN.register(this::onPlayerJoin);
         ServerPlayerEvents.COPY_FROM.register((oldPlayer, newPlayer, alive) -> setRole(newPlayer));
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            sittingManager.onPlayerJoin(newPlayer);
             updatePlayerDisplay(newPlayer);
+            updateSpotlight(newPlayer);
         });
         ServerMessageEvents.ALLOW_CHAT_MESSAGE.register(this::allowChatMessage);
+    }
+
+    public static void refreshSpotlight(ServerPlayer player) {
+        HadestownRuntime runtime = instance;
+        if (runtime != null) {
+            runtime.updateSpotlight(player);
+        }
+    }
+
+    private void tickSpotlights(MinecraftServer server) {
+        onlinePlayers.clear();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            onlinePlayers.add(player.getUUID());
+            updateSpotlight(player);
+        }
+
+        Iterator<Map.Entry<UUID, SpotlightLocation>> iterator = playerSpotlights.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, SpotlightLocation> playerSpotlight = iterator.next();
+            if (!onlinePlayers.contains(playerSpotlight.getKey())) {
+                iterator.remove();
+                releaseSpotlight(playerSpotlight.getValue());
+            }
+        }
+    }
+
+    private void updateSpotlight(ServerPlayer player) {
+        UUID playerId = player.getUUID();
+        SpotlightLocation previousLocation = playerSpotlights.get(playerId);
+        SpotlightLocation currentLocation = null;
+        if (player.entityTags().contains("lit")) {
+            ServerLevel level = player.level();
+            BlockPos position = player.blockPosition().above(3);
+            if (level.isInWorldBounds(position)) {
+                currentLocation = new SpotlightLocation(level, position);
+            }
+        }
+
+        if (currentLocation != null && currentLocation.equals(previousLocation)) {
+            placeSpotlight(currentLocation);
+            return;
+        }
+
+        if (previousLocation != null) {
+            playerSpotlights.remove(playerId);
+            releaseSpotlight(previousLocation);
+        }
+        if (currentLocation != null) {
+            playerSpotlights.put(playerId, currentLocation);
+            int playerCount = spotlightPlayerCounts.getOrDefault(currentLocation, 0);
+            spotlightPlayerCounts.put(currentLocation, playerCount + 1);
+            placeSpotlight(currentLocation);
+        }
+    }
+
+    private void placeSpotlight(SpotlightLocation location) {
+        BlockState currentState = location.level().getBlockState(location.position());
+        if (currentState.equals(SPOTLIGHT_STATE)) {
+            return;
+        }
+        // Preserve existing blocks rather than replacing a ceiling or block entity.
+        if (!currentState.isAir() && !currentState.is(Blocks.LIGHT)) {
+            return;
+        }
+
+        BlockState previousState = placedSpotlights.get(location);
+        if (previousState == null) {
+            previousState = currentState;
+        }
+        if (location.level().setBlockAndUpdate(location.position(), SPOTLIGHT_STATE)) {
+            placedSpotlights.put(location, previousState);
+        }
+    }
+
+    private void releaseSpotlight(SpotlightLocation location) {
+        Integer playerCount = spotlightPlayerCounts.get(location);
+        if (playerCount == null) {
+            return;
+        }
+        if (playerCount > 1) {
+            spotlightPlayerCounts.put(location, playerCount - 1);
+            return;
+        }
+
+        spotlightPlayerCounts.remove(location);
+        BlockState previousState = placedSpotlights.remove(location);
+        if (previousState == null) {
+            return;
+        }
+
+        // Load the previous position so teleports do not leave a stale spotlight behind.
+        location.level().getChunkAt(location.position());
+        if (location.level().getBlockState(location.position()).equals(SPOTLIGHT_STATE)) {
+            location.level().setBlockAndUpdate(location.position(), previousState);
+        }
     }
 
     private void onServerStarted(MinecraftServer server) {
@@ -95,14 +200,6 @@ public final class HadestownRuntime {
                                             loadSet(context.getSource(), x, y);
                                              return 1;
                                          })))));
-
-        dispatcher.register(Commands.literal("sit")
-                .executes(context -> {
-                    if (!(context.getSource().getEntity() instanceof ServerPlayer player)) {
-                        return 0;
-                    }
-                    return sittingManager.sitCommand(player);
-                }));
     }
 
     private InteractionResult onUseBlock(
@@ -112,7 +209,7 @@ public final class HadestownRuntime {
             BlockHitResult hitResult
     ) {
         if (level.isClientSide()) {
-            return sittingManager.useBlock(player, level, hand, hitResult);
+            return InteractionResult.PASS;
         }
         if (!(level instanceof ServerLevel serverLevel) || player.isSpectator()) {
             return InteractionResult.PASS;
@@ -134,17 +231,7 @@ public final class HadestownRuntime {
                 return InteractionResult.PASS;
             }
         }
-        return sittingManager.useBlock(player, serverLevel, hand, hitResult);
-    }
-
-    private InteractionResult onUseEntity(
-            Player player,
-            Level level,
-            InteractionHand hand,
-            Entity entity,
-            EntityHitResult hitResult
-    ) {
-        return sittingManager.usePlayer(player, level, hand, entity);
+        return InteractionResult.PASS;
     }
 
     private void loadSet(net.minecraft.commands.CommandSourceStack source, int x, int y) {
@@ -245,8 +332,8 @@ public final class HadestownRuntime {
     }
 
     private void onPlayerJoin(ServerPlayer player) {
-        sittingManager.onPlayerJoin(player);
         updatePlayerDisplay(player);
+        updateSpotlight(player);
     }
 
     private void setRole(ServerPlayer player) {
@@ -284,12 +371,15 @@ public final class HadestownRuntime {
         if (name.equalsIgnoreCase(config.developer())) {
             return HadestownRole.DEVELOPER;
         }
-        if (config.directors().contains(name)) {
-            return HadestownRole.DIRECTOR;
+        if (config.cast().contains(name)) {
+            return HadestownRole.CAST;
         }
         if (config.crew().contains(name)) {
             return HadestownRole.CREW;
         }
         return null;
+    }
+
+    private record SpotlightLocation(ServerLevel level, BlockPos position) {
     }
 }

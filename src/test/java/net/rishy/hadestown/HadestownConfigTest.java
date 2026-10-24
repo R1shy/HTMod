@@ -22,7 +22,7 @@ class HadestownConfigTest {
         Files.writeString(yaml, """
                 dev: "developer"
                 crew: [crew]
-                directors: [director]
+                cast: [actor]
                 controls:
                   info-sign-pos: [-1, -2, -3]
                   reverse-note-block-pos: [-4, -5, -6]
@@ -44,15 +44,15 @@ class HadestownConfigTest {
         Path json = configDirectory.resolve("hadestown.json");
 
         assertEquals("developer", config.developer());
+        assertEquals(List.of("actor"), config.cast());
         assertEquals(new BlockPos(-1, -2, -3), config.infoSignPos());
         assertEquals(List.of(1, 2), config.sets().setsPerScene());
-        assertTrue(config.sitting().enabled());
-        assertTrue(config.sitting().stairs());
         assertTrue(Files.exists(json));
         assertTrue(Files.exists(yaml));
 
         JsonObject converted = JsonParser.parseString(Files.readString(json)).getAsJsonObject();
         assertEquals("developer", converted.get("dev").getAsString());
+        assertEquals("actor", converted.getAsJsonArray("cast").get(0).getAsString());
         assertEquals(2, converted.getAsJsonObject("sets").getAsJsonArray("sets-per-scene").size());
     }
 }

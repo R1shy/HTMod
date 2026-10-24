@@ -4,11 +4,10 @@
   "package": "net.rishy.hadestown.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "EntitySpotlightMixin",
     "PlayerDisplayNameMixin",
     "ServerPlayerDisplayNameMixin",
-    "PlayerSittingPoseMixin",
-    "SittingPassengerMixin",
-    "SittingSeatDismountMixin"
+    "ServerPlayerMovementMixin"
   ],
   "injectors": {
     "defaultRequire": 1

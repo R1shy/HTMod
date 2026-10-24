@@ -5,7 +5,7 @@ import net.minecraft.network.chat.Component;
 
 public enum HadestownRole {
     DEVELOPER("[DEV] ", ChatFormatting.RED),
-    DIRECTOR("[DIRECTOR] ", ChatFormatting.GOLD),
+    CAST("[CAST] ", ChatFormatting.GOLD),
     CREW("[CREW] ", ChatFormatting.DARK_GREEN);
 
     private final String prefix;
